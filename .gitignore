@@ -1,3 +1,8 @@
+*.class
+*.pyc
+/gen
+/bin
+
 sdk/.settings
 sdk/gen
 sdk/bin

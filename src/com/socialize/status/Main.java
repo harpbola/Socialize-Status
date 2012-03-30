@@ -1,98 +1,86 @@
 package com.socialize.status;
 
-import android.app.Activity;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import android.app.ListActivity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ListAdapter;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 
+import com.flurry.android.FlurryAgent;
 import com.socialize.Socialize;
 import com.socialize.entity.Entity;
-import com.socialize.entity.Like;
-import com.socialize.entity.Share;
 import com.socialize.status.R;
-import com.socialize.ui.actionbar.ActionBarListener;
-import com.socialize.ui.actionbar.ActionBarView;
-import com.socialize.ui.actionbar.OnActionBarEventListener;
 
-public class Main extends Activity {
-	static final String LOG_KEY = "Socialize";
+public class Main extends ListActivity {
+	static final String LOG_KEY = "Main";
 	
+	ListAdapter adapter;
+	public static String[][] entitiesData = new String[][]{
+			{"Http Requests", "http-requests"},
+			{"Notifications", "notifications"},
+			{"Latest Android Build", "android-builds"},
+			{"Latest iOS Build" , "ios-builds"}
+	};
+	private ListAdapter getAdapter(){
+	     List<HashMap<String,String>> entitiesList = new ArrayList<HashMap<String,String>>();
+	     for(int i = 0; i < entitiesData.length; i++) {
+	     	HashMap<String,String> item = new HashMap<String,String>();
+	     	item.put("text1", entitiesData[i][0]);
+	     	item.put("text2", entitiesData[i][1]);
+	     	entitiesList.add(item);
+	     }
+	     return new SimpleAdapter(this,  
+	     		entitiesList, 
+	     		android.R.layout.two_line_list_item,
+	     		new String[] {"text1","text2"}, 
+	     		new int[] {android.R.id.text1, android.R.id.text2 });
+	}
 	
-    /** Called when the activity is first created. */
-    @Override
+	@Override
+	protected void onListItemClick(ListView list, View source, int position, long id) {
+		Intent intent = new Intent();
+		intent.setClass(this, Comments.class);
+		
+		Bundle params = new Bundle();
+		params.putStringArray("entity_data", entitiesData[position]); 
+		intent.putExtras(params);
+		
+		startActivity(intent);
+	}
+
+
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-		// Your entity key.  May be passed as a Bundle parameter to your activity
-		final String entityKey = "socialize-status-main";
-		
+        adapter = this.getAdapter();
+        setListAdapter(adapter);
+
 		// Create an entity object, including a name.
-		final Entity entity = Entity.newInstance(entityKey, "Socialize Status");
-		
-		// Set an entity loader to allow Socialize to load content within your app
+		final Entity entity = Entity.newInstance("socialize-status-main", "Socialize Status");
 		Socialize.getSocialize().setEntityLoader(new SampleEntityLoader());
-
-		// Wrap your existing view with the action bar.
-		// your_layout refers to the resource ID of your current layout.
-		View actionBarWrapped = Socialize.getSocializeUI().showActionBar(this, R.layout.entities, entity, new ActionBarListener() {
-
-			@Override
-			public void onCreate(ActionBarView actionBar) {
-
-				actionBar.setOnActionBarEventListener(new OnActionBarEventListener() {
-
-					@Override
-					public void onUpdate(ActionBarView actionBar) {
-						// Called when the action bar has its data updated
-						Log.i(LOG_KEY, "onUpdate called");
-					}
-
-					@Override
-					public void onPostUnlike(ActionBarView actionBar) {
-						// Called AFTER a user has removed a like
-						Log.i(LOG_KEY, "onPostUnlike called");
-					}
-
-					@Override
-					public void onPostShare(ActionBarView actionBar, Share share) {
-						// Called AFTER a user has posted a share
-						Log.i(LOG_KEY, "onPostShare called");
-					}
-
-					@Override
-					public void onPostLike(ActionBarView actionBar, Like like) {
-						// Called AFTER a user has posted a like
-						Log.i(LOG_KEY, "onPostLike called");
-					}
-
-					@Override
-					public void onLoad(ActionBarView actionBar) {
-						// Called when the action bar is loaded
-						Log.i(LOG_KEY, "onLoad called");
-					}
-
-					@Override
-					public void onGetLike(ActionBarView actionBar, Like like) {
-						// Called when the action bar retrieves the like for the current user
-						Log.i(LOG_KEY, "onGetLike called");
-					}
-
-					@Override
-					public void onGetEntity(ActionBarView actionBar, Entity entity) {
-						// Called when the action bar retrieves the entity data
-						Log.i(LOG_KEY, "onGetEntity called for " + entity.getKey());
-					}
-
-					@Override
-					public void onClick(ActionBarView actionBar, ActionBarEvent evt) {
-						// Called when the user clicks on the action bar 
-						Log.i(LOG_KEY, "onClick called for " + evt);
-					}
-				});
-			}
-		});		
+		View actionBarWrapped = Socialize.getSocializeUI().showActionBar(this, R.layout.entities, entity);
 
 		// Now set the view for your activity to be the wrapped view.
 		setContentView(actionBarWrapped);		 
+    }
+    
+    public void onStart()
+    {
+       super.onStart();
+       FlurryAgent.enableAppCircle();
+       FlurryAgent.onStartSession(this, "I6CY6JBQJU2NJFAEH6AG");
+    }
+    
+    public void onStop()
+    {
+       super.onStop();
+       FlurryAgent.onEndSession(this);
     }
 }
